@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
   // Unfaelle gleich die Anzahl der angeordneten Ueberquerungen
   // minus die Anzahl der tatsaechlichen Ueberquerungen
   accident = (CROSSINGS * NUM_THREADS) - bridge;
-  printf("accidents car0: %d \n", accident);
+  printf("accidents: %d \n", accident);
 
   // exit
   pthread_exit(NULL);
