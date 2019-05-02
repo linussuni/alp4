@@ -8,7 +8,7 @@
 
 #define CROSSINGS 100000
 #define NUM_THREADS 2
-int bridge[2];
+int bridge = 0;
 int accident = 0;
 
 void *bridge_crossing(void *threadid)
@@ -20,10 +20,8 @@ void *bridge_crossing(void *threadid)
   printf("\n I am Car %ld \non cpu %d \n", tid, cpu);
   for (i = 0; i < CROSSINGS; i++)
   {
-    // fahre auf Bruecke
-    bridge[0] ++;
-    // fahre von Bruecke
-    bridge[1] --;
+    // Brueckenueberquerung
+    bridge++;
   }
 }
 
@@ -33,7 +31,6 @@ int main(int argc, char *argv[])
   pthread_t threads[NUM_THREADS];
   int rc, i;
   long t;
-  bridge[0] = bridge[1] = 0;
 
   // starte threads
   for (t = 0; t < NUM_THREADS; t++)
@@ -53,7 +50,10 @@ int main(int argc, char *argv[])
   }
 
   // Anzahl an Zusammenstoessen
-  accident = abs(abs(bridge[0]) - abs(bridge[1]));
+  printf("bridge: %d\n", bridge);
+  // Unfaelle gleich die Anzahl der angeordneten Ueberquerungen
+  // minus die Anzahl der tatsaechlichen Ueberquerungen
+  accident = (CROSSINGS * NUM_THREADS) - bridge;
   printf("accidents car0: %d \n", accident);
 
   // exit
