@@ -40,7 +40,7 @@ void *producer(void *t_args)
         printf("Producer %ld puts %d into buffer at place %d \n",
                args->threadid,
                buffer[last],
-               last);
+               last % NUM_PLACES);
         last++;
         sem_post(&mutex);
         sem_post(&empty);
@@ -61,11 +61,10 @@ void *consumer(void *t_args)
             printf("No products to comsume - > timedout\n");
             break;
         }
-        //sem_wait(&empty);
         sem_wait(&mutex);
         printf("Consumer %ld takes %d \n",
                args->threadid,
-               buffer[last - 1]);
+               buffer[(last - 1) % NUM_PLACES]);
         last--;
         sem_post(&mutex);
     }
