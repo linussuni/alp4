@@ -1,12 +1,14 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
+//#include <sched.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sched.h>
-#include <unistd.h>
 #include <semaphore.h>
+#include <time.h>
+#include <unistd.h>
 
 #define NUM_PLACES 6
 
@@ -17,6 +19,7 @@ struct thread_args
     int num_threads;
 };
 
+struct timespec max_timeout;
 int last = 0;
 int buffer[NUM_PLACES];
 
@@ -43,19 +46,23 @@ void *producer(void *t_args)
         sem_post(&mutex);
         sem_post(&empty);
     }
-    // Todo
-    //return 0;
-    //assert( !"Unreachable code hit\n");
+    return 0;
 }
 
 void *consumer(void *t_args)
 {
     struct thread_args *args = (struct thread_args *)t_args;
+    int s;
 
     while (1)
     {
-        sem_wait(&empty);
-        // replace with sem_timewait();
+        s = sem_timedwait(&empty, &max_timeout);
+        if(s != 0)
+        {
+            printf("No products to comsume - > timedout\n");
+            break;
+        }
+        //sem_wait(&empty);
         sem_wait(&mutex);
         printf("Consumer %ld takes %d \n",
                args->threadid,
@@ -64,6 +71,7 @@ void *consumer(void *t_args)
         sem_post(&mutex);
         sem_post(&full);
     }
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -72,6 +80,9 @@ int main(int argc, char *argv[])
     int num_threads_consumers, num_threads_producers;
     int rc;
     long t;
+
+    clock_gettime(CLOCK_REALTIME, &max_timeout);
+    max_timeout.tv_sec += 5;
 
     // Input
     printf("How many consumers? : ");
@@ -142,12 +153,14 @@ int main(int argc, char *argv[])
     {
         pthread_join(threads_consumer[t], NULL);
     }
+    printf("Closing consumer threads\n");
 
     // joining threads
     for (t = 0; t < num_threads_producers; t++)
     {
         pthread_join(threads_producer[t], NULL);
     }
+    printf("Closing producer threads\n");
 
     sem_destroy(&mutex);
     sem_destroy(&full);
