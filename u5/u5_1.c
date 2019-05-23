@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#define NUM_PLACES 3
+#define NUM_PLACES 6
 
 // struct um der thread Funktion mehr als ein Value zu uebergeben
 struct thread_args
@@ -18,23 +18,34 @@ struct thread_args
 };
 
 int last = 0;
-
 int buffer[NUM_PLACES];
+
+// semaphores
+
+sem_t mutex;
+sem_t empty;
+sem_t full;
 
 void *producer(void *t_args)
 {
-
     struct thread_args *args = (struct thread_args *)t_args;
 
     for (int i = 0; i < 1000; i++)
     {
+        sem_wait(&full);
+        sem_wait(&mutex);
         buffer[last] = i;
         printf("Producer %ld puts %d into buffer at place %d \n",
                args->threadid,
                buffer[last],
                last);
         last++;
+        sem_post(&mutex);
+        sem_post(&empty);
     }
+    // Todo
+    //return 0;
+    //assert( !"Unreachable code hit\n");
 }
 
 void *consumer(void *t_args)
@@ -43,10 +54,15 @@ void *consumer(void *t_args)
 
     while (1)
     {
+        sem_wait(&empty);
+        // replace with sem_timewait();
+        sem_wait(&mutex);
         printf("Consumer %ld takes %d \n",
                args->threadid,
                buffer[last - 1]);
         last--;
+        sem_post(&mutex);
+        sem_post(&full);
     }
 }
 
@@ -54,7 +70,7 @@ int main(int argc, char *argv[])
 {
     // initialisiere Daten
     int num_threads_consumers, num_threads_producers;
-    int rc, i;
+    int rc;
     long t;
 
     // Input
@@ -84,6 +100,11 @@ int main(int argc, char *argv[])
         buffer[t] = 0;
     }
 
+    // init semaphores
+    sem_init(&mutex, 0, 1);
+    sem_init(&empty, 0, 0);
+    sem_init(&full, 0, NUM_PLACES);
+
     // starte consumer threads
     for (t = 0; t < num_threads_consumers; t++)
     {
@@ -99,7 +120,6 @@ int main(int argc, char *argv[])
             exit(-1);
         }
     }
-
 
     // starte consumer threads
     for (t = 0; t < num_threads_producers; t++)
@@ -128,6 +148,10 @@ int main(int argc, char *argv[])
     {
         pthread_join(threads_producer[t], NULL);
     }
+
+    sem_destroy(&mutex);
+    sem_destroy(&full);
+    sem_destroy(&empty);
 
     // exit
     return 0;
