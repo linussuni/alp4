@@ -29,7 +29,6 @@ pthread_cond_t is_full;
 
 void ablegen(void *t_args, int i)
 {
-    printf("ablegen\n");
     struct thread_args *args = (struct thread_args *)t_args;
     pthread_mutex_lock(&mutex);
     while (last == NUM_PLACES)
@@ -48,14 +47,13 @@ void ablegen(void *t_args, int i)
 
 int entnehmen(void *t_args)
 {
-    printf("entnehmen\n");
     struct thread_args *args = (struct thread_args *)t_args;
     pthread_mutex_lock(&mutex);
     while (last == 0)
     {
         if (pthread_cond_timedwait(&is_empty, &mutex, &max_timeout) != 0)
         {
-            printf("WAIT\n");
+            printf("Consumer %ld Timedout\n", args->threadid);
             pthread_mutex_unlock(&mutex);
             return 1;
         }
@@ -74,7 +72,6 @@ void *producer(void *t_args)
     //struct thread_args *args = (struct thread_args *)t_args;
     for (int i = 0; i < 1000; i++)
     {
-        printf("PRODUCE\n");
         ablegen(t_args, i);
     }
     return 0;
@@ -85,7 +82,6 @@ void *consumer(void *t_args)
     //struct thread_args *args = (struct thread_args *)t_args;
     while (1)
     {
-        printf("CONSUME\n");
         if (entnehmen(t_args) != 0)
         {
             break;
