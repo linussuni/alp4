@@ -1,13 +1,19 @@
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 #define NUM_OBJ 5
-#define GRAVITY_CONSTANT 1.0
-//#define GRAVITY_CONSTANT (6.674 * pow(10, -11))
 #define ZERO_VECTOR vector zero_vector = {0.0, 0.0};
-#define DT 0.00001
+
+int global_num_obj = NUM_OBJ;
+
+// we set the the Gravity Constant to 1 because otherwise its effect is neglectable
+// DT is the delta time between each update of the velocities
+#define GRAVITY_CONSTANT 1.0
+#define DT 0.00000001
+//#define GRAVITY_CONSTANT (6.674 * pow(10, -11))
 
 typedef struct
 {
@@ -52,7 +58,7 @@ void print_obj_pos_speed(obj o[], int cycle)
     if (cycle < 0)
     {
         printf("%-8s%-24s%-24s%-24s%-24s\n", "ID", "pos x", "pos y", "speed", "mass");
-        for (int i = 0; i < NUM_OBJ; i++)
+        for (int i = 0; i < global_num_obj; i++)
         {
             double speed = len_vector(o[i].velocity);
             printf("%-8d%-24f%-24f%-24f%-24f\n",
@@ -62,7 +68,7 @@ void print_obj_pos_speed(obj o[], int cycle)
     else
     {
         printf("cycle: %-5d%-8s%-24s%-24s%-24s%-24s\n", cycle, "ID", "pos x", "pos y", "speed", "mass");
-        for (int i = 0; i < NUM_OBJ; i++)
+        for (int i = 0; i < global_num_obj; i++)
         {
             double speed = len_vector(o[i].velocity);
             printf("            %-8d%-24f%-24f%-24f%-24f\n",
@@ -74,7 +80,7 @@ void print_obj_pos_speed(obj o[], int cycle)
 void print_obj_all(obj o[])
 {
     printf("%-8s%-24s%-24s%-24s%-24s%-24s%-24s%-24s\n", "ID", "pos x", "pos y", "velocity x", "velocity y", "acceleration x", "acceleration y", "mass");
-    for (int i = 0; i < NUM_OBJ; i++)
+    for (int i = 0; i < global_num_obj; i++)
     {
         printf("%-8d%-24f%-24f%-24f%-24f%-24f%-24f%-24f\n",
                o[i].id, o[i].position.x, o[i].position.y,
@@ -117,7 +123,7 @@ obj destroy_obj(obj o)
 
 void update_position(obj o[])
 {
-    for (int i = 0; i < NUM_OBJ; i++)
+    for (int i = 0; i < global_num_obj; i++)
     {
         if (o[i].id != -1)
         {
@@ -130,7 +136,7 @@ void update_position(obj o[])
 
 void update_velocity(obj o[])
 {
-    for (int i = 0; i < NUM_OBJ; i++)
+    for (int i = 0; i < global_num_obj; i++)
         if (o[i].id != -1)
         {
             {
@@ -142,12 +148,12 @@ void update_velocity(obj o[])
 void update_acceleration(obj o[])
 {
     ZERO_VECTOR
-    for (int i = 0; i < NUM_OBJ; i++)
+    for (int i = 0; i < global_num_obj; i++)
     {
         if (o[i].id != -1)
         {
             o[i].acceleration = zero_vector;
-            for (int j = 0; j < NUM_OBJ; j++)
+            for (int j = 0; j < global_num_obj; j++)
             {
                 if (i != j && o[j].id != -1)
                 {
@@ -166,33 +172,38 @@ void update_acceleration(obj o[])
     }
 }
 
-void handle_collision(obj o[])
-{
-    for (int i = 0; i < NUM_OBJ; i++)
+int handle_collision(obj o[])
+{  
+    int collision_counter = 0;
+    for (int i = 0; i < global_num_obj; i++)
     {
         if (o[i].id != -1)
         {
-            for (int j = 0; j < NUM_OBJ; j++)
+            for (int j = 0; j < global_num_obj; j++)
             {
                 if (i != j && o[j].id != -1)
                 {
                     if (round(o[i].position.x) == round(o[j].position.x) && round(o[i].position.y) == round(o[j].position.y))
                     {
+                        printf("COLLISION: Object %d crashed into object %d!\n", o[i].id, o[j].id);
                         o[j].mass += o[i].mass;
                         o[j].velocity = add_vectors(o[j].velocity, o[i].velocity);
                         o[j].acceleration = add_vectors(o[j].acceleration, o[i].acceleration);
                         o[i] = destroy_obj(o[i]);
+                        collision_counter++;
                     }
                 }
             }
         }
     }
+    return collision_counter;
 }
 
 void ignore_collision(obj o[])
 {
-
+    // just do nothing
 }
+
 // plotting
 int init_csv(char const *filename)
 {
@@ -212,12 +223,56 @@ int wirte_to_csv(obj o[], char const *filename)
     {
         return -1;
     }
-    for (int i = 0; i < NUM_OBJ; i++)
+    for (int i = 0; i < global_num_obj; i++)
     {
         fprintf(f, "%d,%f,%f\n", o[i].id, o[i].position.x, o[i].position.y);
     }
     fclose(f);
     return 0;
+}
+
+int simulate_universe(int num_obj, int total_cycles, bool collisions, bool black_hole)
+{
+    global_num_obj = num_obj;
+    // init objects
+    obj obj_arr[num_obj];
+
+    for (int i = 0; i < num_obj; i++)
+    {
+        obj *o = create_obj(i);
+        obj_arr[i] = *o;
+    }
+    
+    // create giant black hole
+    if (black_hole == true)
+    {
+        obj_arr[num_obj - 1].mass = 1000000000;
+    }
+
+    // init csv file
+    init_csv("test.csv");
+    print_obj_all(obj_arr);
+
+    int collision_counter = 0;
+    for (int cycle = 0; cycle < total_cycles; cycle++)
+    {
+        update_acceleration(obj_arr);
+        update_position(obj_arr);
+        update_velocity(obj_arr);
+        if (collisions == true)
+        {
+            collision_counter += handle_collision(obj_arr);
+        }
+        else
+        {
+            ignore_collision(obj_arr);
+        }
+        // write batch to csv
+        wirte_to_csv(obj_arr, "test.csv");
+    }
+    print_obj_all(obj_arr);
+
+    return collision_counter;
 }
 
 int main()
@@ -231,31 +286,9 @@ int main()
     time_t t;
     srand((unsigned)time(&t));
 
-    // init objects
-    obj obj_arr[NUM_OBJ];
+    int collision_counter = simulate_universe(5, 1000, false, true);
 
-    for (int i = 0; i < NUM_OBJ; i++)
-    {
-        obj *o = create_obj(i);
-        obj_arr[i] = *o;
-    }
-    obj_arr[NUM_OBJ - 1].position.x = 0.0;
-    obj_arr[NUM_OBJ - 1].position.y = 0.0;
-    obj_arr[NUM_OBJ - 1].mass = 1000000000;
-
-    // init csv file
-    init_csv("test.csv");
-    print_obj_all(obj_arr);
-    for (int cycle = 0; cycle < 200; cycle++)
-    {
-        update_acceleration(obj_arr);
-        update_position(obj_arr);
-        update_velocity(obj_arr);
-        ignore_collision(obj_arr);
-        wirte_to_csv(obj_arr, "test.csv");
-        //print_obj_pos_speed(obj_arr, cycle);
-    }
-    print_obj_all(obj_arr);
+    printf("Number of collisions: %d", collision_counter);
 
     return 0;
 }
