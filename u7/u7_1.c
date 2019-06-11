@@ -173,7 +173,7 @@ void update_acceleration(obj o[])
 }
 
 int handle_collision(obj o[])
-{  
+{
     int collision_counter = 0;
     for (int i = 0; i < global_num_obj; i++)
     {
@@ -186,6 +186,8 @@ int handle_collision(obj o[])
                     if (round(o[i].position.x) == round(o[j].position.x) && round(o[i].position.y) == round(o[j].position.y))
                     {
                         printf("COLLISION: Object %d crashed into object %d!\n", o[i].id, o[j].id);
+                        printf("\tObject %d was at position x: %f y: %f\n", o[i].id, o[i].position.x, o[i].position.y);
+                        printf("\tObject %d was at position x: %f y: %f\n\n", o[j].id, o[i].position.x, o[i].position.y);
                         o[j].mass += o[i].mass;
                         o[j].velocity = add_vectors(o[j].velocity, o[i].velocity);
                         o[j].acceleration = add_vectors(o[j].acceleration, o[i].acceleration);
@@ -202,6 +204,20 @@ int handle_collision(obj o[])
 void ignore_collision(obj o[])
 {
     // just do nothing
+}
+
+vector calculate_center_of_mass(obj o[])
+{
+    double total_mass, x_wrt_mass, y_wrt_mass = 0.0;
+    for (int i = 0; i < global_num_obj; i++)
+    {
+        total_mass += o[i].mass;
+        x_wrt_mass += o[i].position.x * o[i].mass;
+        y_wrt_mass += o[i].position.y * o[i].mass;
+    }
+
+    vector c_o_m = {x_wrt_mass / total_mass, y_wrt_mass / total_mass};
+    return c_o_m;
 }
 
 // plotting
@@ -231,18 +247,17 @@ int wirte_to_csv(obj o[], char const *filename)
     return 0;
 }
 
-int simulate_universe(int num_obj, int total_cycles, bool collisions, bool black_hole)
+void simulate_universe(int num_obj, int total_cycles, bool collisions, bool black_hole)
 {
-    global_num_obj = num_obj;
     // init objects
+    global_num_obj = num_obj;
     obj obj_arr[num_obj];
-
     for (int i = 0; i < num_obj; i++)
     {
         obj *o = create_obj(i);
         obj_arr[i] = *o;
     }
-    
+
     // create giant black hole
     if (black_hole == true)
     {
@@ -251,8 +266,11 @@ int simulate_universe(int num_obj, int total_cycles, bool collisions, bool black
 
     // init csv file
     init_csv("test.csv");
+
     print_obj_all(obj_arr);
 
+    vector c_o_m = calculate_center_of_mass(obj_arr);
+    printf("Center of mass:\n\tx: %f \t\ty: %f\n\n", c_o_m.x, c_o_m.y);
     int collision_counter = 0;
     for (int cycle = 0; cycle < total_cycles; cycle++)
     {
@@ -261,7 +279,13 @@ int simulate_universe(int num_obj, int total_cycles, bool collisions, bool black
         update_velocity(obj_arr);
         if (collisions == true)
         {
-            collision_counter += handle_collision(obj_arr);
+            int tmp = handle_collision(obj_arr);
+            if (tmp > 0)
+            {
+                c_o_m = calculate_center_of_mass(obj_arr);
+                printf("Center of mass:\n\tx: %f \t\ty: %f\n\n", c_o_m.x, c_o_m.y);
+            }
+            collision_counter += tmp;
         }
         else
         {
@@ -271,8 +295,15 @@ int simulate_universe(int num_obj, int total_cycles, bool collisions, bool black
         wirte_to_csv(obj_arr, "test.csv");
     }
     print_obj_all(obj_arr);
+    c_o_m = calculate_center_of_mass(obj_arr);
+    printf("Center of mass:\n\tx: %f \t\ty: %f\n\n", c_o_m.x, c_o_m.y);
 
-    return collision_counter;
+    if(collisions == true){
+        printf("Number of collisions: %d", collision_counter);
+    } else {
+        printf("Collisions are deaktivated");
+    }
+
 }
 
 int main()
@@ -286,9 +317,7 @@ int main()
     time_t t;
     srand((unsigned)time(&t));
 
-    int collision_counter = simulate_universe(15, 5000, true, true);
-
-    printf("Number of collisions: %d", collision_counter);
+    simulate_universe(15, 5000, false, true);
 
     return 0;
 }
