@@ -13,17 +13,19 @@ with open("test.csv", "r") as csvfile:
         else:
             break
 
-obj_lists = [[[],[]] for x in range(obj_num)]
+obj_lists = [[[], []] for x in range(obj_num)]
 
 with open("test.csv", "r") as csvfile:
     plots = csv.reader(csvfile, delimiter=",")
     for row in plots:
-        obj_lists[int(row[0])][0].append(float(row[1]))
-        obj_lists[int(row[0])][1].append(float(row[2]))
+        if int(row[0]) != -1:
+            obj_lists[int(row[0])][0].append(float(row[1]))
+            obj_lists[int(row[0])][1].append(float(row[2]))
 
-
+obj = 0
 for graphs in obj_lists:
-    plt.plot(graphs[0], graphs[1])
+    plt.plot(graphs[0], graphs[1], label="object" + str(obj))
+    plt.legend()
+    obj += 1
 
-# plt.ylabel('some numbers')
 plt.show()
