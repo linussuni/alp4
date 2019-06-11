@@ -286,7 +286,7 @@ int main()
     time_t t;
     srand((unsigned)time(&t));
 
-    int collision_counter = simulate_universe(5, 1000, false, true);
+    int collision_counter = simulate_universe(15, 5000, true, true);
 
     printf("Number of collisions: %d", collision_counter);
 
