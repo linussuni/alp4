@@ -7,9 +7,9 @@ import alpv.mwp.Client;
 import alpv.mwp.Job;
 import alpv.mwp.RemoteFuture;
 
-public class SquareClient extends Client {
+public class ClientMath extends Client {
 
-	public SquareClient(String host, int port) throws RemoteException,
+	public ClientMath(String host, int port) throws RemoteException,
 			NotBoundException {
 		super(host, port);
 	}

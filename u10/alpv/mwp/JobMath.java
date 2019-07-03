@@ -7,14 +7,14 @@ import alpv.mwp.Pool;
 import alpv.mwp.Task;
 import java.util;
 
-public class SquareJob implements Job<Integer, Integer, Integer> {
+public class JobMath implements Job<Integer, Integer, Integer> {
 
 	private static final long serialVersionUID = 267504255130640656L;
 	private Integer[] _numbers;
 	protected SquareTask _task;
 	protected Integer _argument;
 	protected SquareRemoteFuture _remoteFuture;
-	public SquareJob(Integer[] numbers) throws RemoteException {
+	public JobMath(Integer[] numbers) throws RemoteException {
 		_task = new SquareTask();
 		_numbers = numbers;
 	}
