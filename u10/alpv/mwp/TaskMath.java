@@ -1,6 +1,7 @@
 package alpv.mwp;
 
 import alpv.mwp.Task;
+import java.lang.*;
 
 public class TaskMath implements Task<Integer, Integer> {
 
@@ -8,6 +9,6 @@ public class TaskMath implements Task<Integer, Integer> {
 
 	@Override
 	public Integer exec(Integer number) {
-		return new Integer(math.pow(number,2));
+		return ((int) Math.pow(number,2));
 	}
 }

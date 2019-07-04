@@ -2,20 +2,15 @@ package alpv.mwp;
 
 import java.rmi.RemoteException;
 
-import alpv.mwp.Job;
-import alpv.mwp.Pool;
-import alpv.mwp.Task;
-import java.util;
-
 public class JobMath implements Job<Integer, Integer, Integer> {
 
 	private static final long serialVersionUID = 267504255130640656L;
 	private Integer[] _numbers;
-	protected SquareTask _task;
+	protected TaskMath _task;
 	protected Integer _argument;
-	protected SquareRemoteFuture _remoteFuture;
+	protected RemoteFutureMath _remoteFuture;
 	public JobMath(Integer[] numbers) throws RemoteException {
-		_task = new SquareTask();
+		_task = new TaskMath();
 		_numbers = numbers;
 	}
 
@@ -30,10 +25,10 @@ public class JobMath implements Job<Integer, Integer, Integer> {
 		}
 	}
 	
-	public SquareRemoteFuture getFuture() {
+	public RemoteFutureMath getFuture() {
 		if(_remoteFuture == null) {
 			try {
-				_remoteFuture = new SquareRemoteFuture();
+				_remoteFuture = new RemoteFutureMath();
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
@@ -51,7 +46,7 @@ public class JobMath implements Job<Integer, Integer, Integer> {
 		try {
 			Integer i;
 			while ((i = resPool.get()) != null) {
-				result += i
+				result += i;
 			}
 			getFuture().set(result);
 		} catch (RemoteException e) {

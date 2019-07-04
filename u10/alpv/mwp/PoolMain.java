@@ -8,7 +8,7 @@ public class PoolMain<T> extends UnicastRemoteObject implements Pool<T> {
 
     final ArrayDeque<T> queue;
 
-    public PoolMain() {
+    public PoolMain() throws RemoteException{
         queue = new ArrayDeque<T>();
     }
 

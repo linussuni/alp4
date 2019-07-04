@@ -73,14 +73,13 @@ public class MasterServer extends UnicastRemoteObject implements Master, Server 
 	}
 
 	@Override
-	public <Argument, Result, ReturnObject> RemoteFuture<ReturnObject> doJob(
-			final Job<Argument, Result, ReturnObject> job)
-			throws RemoteException {
-		final PoolMain<Argument> argumentPool = new PoolMain<Argument>(
-				workers.size());
+	public <Argument, Result, ReturnObject> RemoteFuture<ReturnObject> doJob(Job<Argument, Result, ReturnObject> job) throws RemoteException {
+		
+		PoolMain<Result> resultPool = new PoolMain<Result>();
+		PoolMain<Argument> argumentPool = new PoolMain<Argument>();
 		job.split(argumentPool, workers.size());
-		final PoolMain<Result> resultPool = new PoolMain<Result>();
 		System.out.println("Server: Start job. Workers: " + workers.size());
+
 		for (Worker w : workers) {
 			w.start(job.getTask(), argumentPool, resultPool);
 		}

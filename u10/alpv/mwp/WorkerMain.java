@@ -4,20 +4,27 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.rmi.RemoteException;
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-public class WorkerMain extends UnicastRemoteObject implents Worker, Runnable {
+public class WorkerMain extends UnicastRemoteObject implements Worker, Runnable {
 
     private Master master;
     private boolean running = true;
 
-    public WorkerMain(String host, int port) {
-        System.out.println("Worker - connect to server: " + host " port: " + port);
-        Registry registry = LocateRegistry.getRegistry(host, port);
-        master = (Master) (registry.lookup("mwp"));
-        master.registerWorker(this);
+    public WorkerMain(String host, int port) throws RemoteException {
+            System.out.println("Worker - connect to server: " + host + " port: " + port);
+        try {
+            Registry registry = LocateRegistry.getRegistry(host, port);
+            master = (Master) (registry.lookup("mwp"));
+            master.registerWorker(this);
+        } catch (RemoteException e) {
+            System.err.println(e);
+        } catch (NotBoundException e) {
+            System.err.println(e);
+        }
     }
 
     public void run() {
@@ -31,7 +38,7 @@ public class WorkerMain extends UnicastRemoteObject implents Worker, Runnable {
                     running = false;
                     br.close();
                 }
-            } catch (IOException e)
+            } catch (IOException e) {}
         }
     }
 
@@ -40,7 +47,7 @@ public class WorkerMain extends UnicastRemoteObject implents Worker, Runnable {
         workerThread.start();
     }
 
-    class WorkerThread<Argument, Result> implents Runnable {
+    class WorkerThread<Argument, Result> implements Runnable {
         Task<Argument, Result> task;
         Pool<Argument> argpool;
         Pool<Result> respool;
@@ -52,14 +59,18 @@ public class WorkerMain extends UnicastRemoteObject implents Worker, Runnable {
         }
 
         public void run() {
-            while(running && argpool.size() != -1){
-                Argument argument = argpool.get();
-                if(argument != null) {
-                    Result result = task.exec(argument);
-                    if(result != null) {
-                        respool.put(result);
+            try {
+                while(running && argpool.size() != -1){
+                    Argument argument = argpool.get();
+                    if(argument != null) {
+                        Result result = task.exec(argument);
+                        if(result != null) {
+                            respool.put(result);
+                        }
                     }
                 }
+            } catch (RemoteException e) {
+                System.err.println(e);
             }
         }
     }
